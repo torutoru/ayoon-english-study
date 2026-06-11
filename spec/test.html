@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>내 영어 친구</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
+
+        /* 기본 스타일 (6살 아이에 맞춘 아기자기한 폰트와 배경) */
+        body {
+            font-family: 'Jua', sans-serif;
+            background-color: #f0f8ff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        /* 스마트폰 형태의 웹앱 컨테이너 */
+        #app {
+            width: 360px;
+            height: 640px;
+            background-color: #ffffff;
+            border-radius: 30px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* 각 화면 공통 스타일 */
+        .screen {
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        h1 {
+            color: #ff9a9e;
+            text-align: center;
+            margin-top: 40px;
+            font-size: 32px;
+        }
+
+        /* 헤더 (뒤로가기 버튼 등) */
+        .header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+        .back-btn {
+            background: #ffecd2;
+            border: none;
+            border-radius: 15px;
+            padding: 10px 15px;
+            font-size: 20px;
+            font-family: inherit;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        /* 메인 화면 버튼들 */
+        .main-btn {
+            background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);
+            border: none;
+            border-radius: 25px;
+            color: white;
+            font-size: 28px;
+            font-family: inherit;
+            padding: 30px 20px;
+            margin: 15px 0;
+            cursor: pointer;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        .main-btn.history {
+            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+        }
+        .main-btn:active { transform: scale(0.95); }
+
+        /* 대화 화면 스타일 */
+        .chat-box {
+            flex-grow: 1;
+            background-color: #fff9f0;
+            border-radius: 20px;
+            padding: 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .bubble {
+            max-width: 70%;
+            padding: 12px 18px;
+            border-radius: 20px;
+            font-size: 18px;
+        }
+        .bubble.ai { background-color: #e2f0cb; align-self: flex-start; border-top-left-radius: 0; }
+        .bubble.user { background-color: #ffecd2; align-self: flex-end; border-top-right-radius: 0; }
+
+        .walkie-talkie-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px 0;
+        }
+        .walkie-talkie-btn {
+            background-color: #ff758c;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 80px;
+            height: 80px;
+            font-size: 40px;
+            box-shadow: 0 8px 15px rgba(255, 117, 140, 0.4);
+            cursor: pointer;
+        }
+        .walkie-talkie-btn:active { transform: scale(0.9); background-color: #ff4766; }
+
+        /* 히스토리 화면 스타일 */
+        .history-table-container {
+            flex: 1;
+            background: #fff;
+            border-radius: 15px;
+            border: 2px solid #8fd3f4;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        table { width: 100%; border-collapse: collapse; text-align: center; font-size: 18px; }
+        th, td { padding: 10px; border-bottom: 2px dashed #f0f0f0; }
+        tr:last-child td { border-bottom: none; }
+        .row-btn { cursor: pointer; background: #fdfbfb; border-radius: 10px; transition: 0.2s; }
+        .row-btn:hover { background: #e2f0cb; }
+
+        .pagination { display: flex; justify-content: center; gap: 10px; margin-top: 10px; font-size: 20px; }
+        .page-btn { cursor: pointer; color: #a18cd1; }
+
+        .history-chat-view {
+            flex: 1;
+            background-color: #f5f7fa;
+            border-radius: 20px;
+            padding: 15px;
+            overflow-y: auto;
+            border: 2px solid #a18cd1;
+        }
+        .history-placeholder { text-align: center; color: #aaa; margin-top: 40px; font-size: 18px; }
+    </style>
+</head>
+<body>
+
+<div id="app">
+
+    <div id="main-screen" class="screen active">
+        <h1>안녕! 영어 친구 🐻</h1>
+        <p style="text-align: center; font-size: 20px; color: #555;">오늘도 신나게 놀아볼까?</p>
+        <div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: center;">
+            <button class="main-btn" onclick="nav('chat-screen')">🎤 대화하기</button>
+            <button class="main-btn history" onclick="nav('history-screen')">📖 지난 이야기</button>
+        </div>
+    </div>
+
+    <div id="chat-screen" class="screen">
+        <div class="header">
+            <button class="back-btn" onclick="nav('main-screen')">🔙 홈으로</button>
+            <span style="margin-left: 20px; color: #ff9a9e; font-size: 24px;">영어 친구 🐻</span>
+        </div>
+        <div class="chat-box">
+            <div class="bubble ai">Hello! How are you today? 👋</div>
+            <div class="bubble user">I am fine! 🍎</div>
+            <div class="bubble ai">Great! Let's play together!</div>
+        </div>
+        <div class="walkie-talkie-container">
+            <button class="walkie-talkie-btn">🎤</button>
+        </div>
+        <div style="text-align: center; color: #888; font-size: 16px;">마이크를 누르고 말해봐요!</div>
+    </div>
+
+    <div id="history-screen" class="screen">
+        <div class="header">
+            <button class="back-btn" onclick="nav('main-screen')">🔙 홈으로</button>
+        </div>
+
+        <div class="history-table-container">
+            <table>
+                <tr>
+                    <th>날짜 📅</th>
+                    <th>주제 🎈</th>
+                </tr>
+                <tr class="row-btn" onclick="loadHistory('2026-06-01')">
+                    <td>06/01</td>
+                    <td>과일 이름 맞추기</td>
+                </tr>
+                <tr class="row-btn" onclick="loadHistory('2026-05-30')">
+                    <td>05/30</td>
+                    <td>동물원 구경</td>
+                </tr>
+                <tr class="row-btn" onclick="loadHistory('2026-05-28')">
+                    <td>05/28</td>
+                    <td>인사말 연습</td>
+                </tr>
+            </table>
+            <div class="pagination">
+                <span class="page-btn">◀</span>
+                <span class="page-btn" style="font-weight: bold; color: #ff758c;">1</span>
+                <span class="page-btn">2</span>
+                <span class="page-btn">3</span>
+                <span class="page-btn">▶</span>
+            </div>
+        </div>
+
+        <div class="history-chat-view" id="history-content">
+            <div class="history-placeholder">위에서 날짜를 콕! 눌러주세요. ✨</div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // 화면 전환 함수
+    function nav(targetId) {
+        document.querySelectorAll('.screen').forEach(screen => {
+            screen.classList.remove('active');
+        });
+        document.getElementById(targetId).classList.add('active');
+    }
+
+    // 히스토리 리스트 클릭 시 하단에 채팅 렌더링 하는 함수 (예시)
+    function loadHistory(date) {
+        const contentBox = document.getElementById('history-content');
+        contentBox.innerHTML = `
+            <div style="text-align: center; margin-bottom: 10px; color: #a18cd1;">${date}의 대화 기록</div>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+                <div style="background:#e2f0cb; padding:10px; border-radius:15px; max-width:80%; align-self:flex-start;">What is this? 🍎</div>
+                <div style="background:#ffecd2; padding:10px; border-radius:15px; max-width:80%; align-self:flex-end;">Apple!</div>
+                <div style="background:#e2f0cb; padding:10px; border-radius:15px; max-width:80%; align-self:flex-start;">Good job! ✨</div>
+            </div>
+        `;
+    }
+</script>
+
+</body>
+</html>

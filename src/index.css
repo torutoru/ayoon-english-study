@@ -1,0 +1,482 @@
+/* test.html 스타일 이식 + React 구현용 추가 스타일 */
+
+/* 기본 스타일 (6살 아이에 맞춘 아기자기한 폰트와 배경) */
+body {
+  font-family: 'Jua', sans-serif;
+  background-color: #f0f8ff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+  overflow: hidden;
+}
+
+/* 스마트폰 형태의 웹앱 컨테이너.
+   기준 크기(360x640)는 고정하고, --app-scale 로 비율을 유지한 채 확대한다.
+   배율은 App.tsx 가 뷰포트 높이에 맞춰 동적으로 계산한다. */
+#app {
+  width: 360px;
+  height: 640px;
+  background-color: #ffffff;
+  border-radius: 30px;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  position: relative;
+  transform: scale(var(--app-scale, 1));
+  transform-origin: center center;
+}
+
+/* 각 화면 공통 스타일 */
+.screen {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+h1 {
+  color: #ff9a9e;
+  text-align: center;
+  margin-top: 40px;
+  font-size: 32px;
+}
+
+.subtitle {
+  text-align: center;
+  font-size: 20px;
+  color: #555;
+}
+
+.main-buttons {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* 헤더 (뒤로가기 버튼 등) */
+.header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+  font-size: 24px;
+}
+.header-title {
+  margin-left: 20px;
+  color: #ff9a9e;
+  font-size: 24px;
+}
+.back-btn {
+  background: #ffecd2;
+  border: none;
+  border-radius: 15px;
+  padding: 10px 15px;
+  font-size: 20px;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+/* 메인 화면 버튼들 */
+.main-btn {
+  background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);
+  border: none;
+  border-radius: 25px;
+  color: white;
+  font-size: 28px;
+  font-family: inherit;
+  padding: 30px 20px;
+  margin: 15px 0;
+  cursor: pointer;
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s;
+}
+.main-btn.history {
+  background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+}
+.main-btn.game {
+  background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+}
+.main-btn:active {
+  transform: scale(0.95);
+}
+
+/* 난이도 선택 버튼 (3개라 살짝 작게) */
+.main-btn.diff-btn {
+  padding: 18px 20px;
+  margin: 10px 0;
+  font-size: 26px;
+}
+.diff-desc {
+  display: block;
+  font-size: 14px;
+  margin-top: 4px;
+  opacity: 0.9;
+}
+.main-btn.diff-easy {
+  background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+}
+.main-btn.diff-medium {
+  background: linear-gradient(135deg, #fbc2eb 0%, #fcd29f 100%);
+}
+.main-btn.diff-hard {
+  background: linear-gradient(135deg, #ff9a9e 0%, #fa709a 100%);
+}
+.back-btn.diff-back {
+  align-self: center;
+  margin-top: 6px;
+}
+
+/* 대화 화면 스타일 */
+.chat-box {
+  flex-grow: 1;
+  background-color: #fff9f0;
+  border-radius: 20px;
+  padding: 15px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.bubble {
+  max-width: 70%;
+  padding: 12px 18px;
+  border-radius: 20px;
+  font-size: 18px;
+  word-break: break-word;
+}
+/* 티쳐 말풍선 + 다시 듣기 버튼을 한 줄로 */
+.bubble-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  max-width: 85%;
+}
+.replay-btn {
+  flex-shrink: 0;
+  background: #e2f0cb;
+  border: none;
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  transition: transform 0.1s;
+}
+.replay-btn:active {
+  transform: scale(0.9);
+}
+.bubble.ai {
+  background-color: #e2f0cb;
+  align-self: flex-start;
+  border-top-left-radius: 0;
+}
+.bubble.user {
+  background-color: #ffecd2;
+  align-self: flex-end;
+  border-top-right-radius: 0;
+}
+
+.walkie-talkie-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px 0;
+  position: relative;
+}
+
+/* 난이도 배지 (마이크 버튼 우측) */
+.difficulty-badge {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  color: #888;
+  font-size: 14px;
+}
+.difficulty-icon {
+  font-size: 26px;
+}
+.walkie-talkie-btn {
+  background-color: #ff758c;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 80px;
+  height: 80px;
+  font-size: 40px;
+  box-shadow: 0 8px 15px rgba(255, 117, 140, 0.4);
+  cursor: pointer;
+  transition: transform 0.1s, background-color 0.2s;
+}
+.walkie-talkie-btn:active {
+  transform: scale(0.9);
+  background-color: #ff4766;
+}
+.walkie-talkie-btn:disabled {
+  background-color: #f3b6c2;
+  cursor: default;
+  box-shadow: none;
+}
+.mic-hint {
+  text-align: center;
+  color: #888;
+  font-size: 16px;
+  min-height: 20px;
+}
+
+/* 히스토리 화면 스타일 */
+.history-table-container {
+  flex: 1;
+  background: #fff;
+  border-radius: 15px;
+  border: 2px solid #8fd3f4;
+  padding: 10px;
+  margin-bottom: 10px;
+  overflow-y: auto;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: center;
+  font-size: 18px;
+}
+th,
+td {
+  padding: 10px;
+  border-bottom: 2px dashed #f0f0f0;
+}
+tr:last-child td {
+  border-bottom: none;
+}
+.row-btn {
+  cursor: pointer;
+  background: #fdfbfb;
+  border-radius: 10px;
+  transition: 0.2s;
+}
+.row-btn:hover {
+  background: #e2f0cb;
+}
+.history-empty {
+  color: #aaa;
+  font-size: 16px;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 10px;
+  font-size: 20px;
+}
+.page-btn {
+  cursor: pointer;
+  color: #a18cd1;
+}
+
+.history-chat-view {
+  flex: 1;
+  background-color: #f5f7fa;
+  border-radius: 20px;
+  padding: 15px;
+  overflow-y: auto;
+  border: 2px solid #a18cd1;
+}
+.history-placeholder {
+  text-align: center;
+  color: #aaa;
+  margin-top: 40px;
+  font-size: 18px;
+}
+.history-date-label {
+  text-align: center;
+  margin-bottom: 10px;
+  color: #a18cd1;
+}
+.history-summary {
+  background: #fff3cd;
+  border-radius: 12px;
+  padding: 8px 12px;
+  font-size: 15px;
+  color: #7a6a3a;
+  margin-bottom: 10px;
+}
+.history-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.history-bubble {
+  padding: 10px;
+  border-radius: 15px;
+  max-width: 80%;
+  font-size: 16px;
+  word-break: break-word;
+}
+.history-bubble.ai {
+  background: #e2f0cb;
+  align-self: flex-start;
+}
+.history-bubble.user {
+  background: #ffecd2;
+  align-self: flex-end;
+}
+
+/* 단어 맞추기 게임 화면 */
+.game-round {
+  text-align: center;
+  font-size: 22px;
+  color: #f6913d;
+  margin-bottom: 8px;
+}
+.game-card-area {
+  flex-grow: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #fff9f0;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  position: relative;
+  overflow: hidden;
+}
+.game-card-emoji {
+  font-size: 140px;
+  line-height: 1;
+}
+.game-card-img {
+  max-width: 80%;
+  max-height: 80%;
+  object-fit: contain;
+}
+/* 정답 O / 오답 X 오버레이 */
+.result-mark {
+  position: absolute;
+  font-size: 200px;
+  font-weight: bold;
+  animation: pop 0.25s ease-out;
+  text-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+.result-mark.correct {
+  color: #3bd16f;
+}
+.result-mark.wrong {
+  color: #ff5c7a;
+}
+@keyframes pop {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+/* 다시 듣기 버튼 (마이크 버튼 좌측) */
+.game-replay-btn {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #ffecd2;
+  border: none;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  font-size: 24px;
+  cursor: pointer;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.08);
+}
+.game-replay-btn:active {
+  transform: translateY(-50%) scale(0.9);
+}
+.game-heard {
+  margin-top: 4px;
+  font-size: 14px;
+  color: #aaa;
+}
+/* 게임 완료 화면 */
+.game-done {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.game-done-mark {
+  font-size: 120px;
+  animation: pop 0.3s ease-out;
+}
+.game-done-text {
+  font-size: 22px;
+  color: #f6913d;
+  margin: 10px 0 20px;
+  text-align: center;
+}
+.game-done .main-buttons {
+  flex-grow: 0;
+  width: 100%;
+}
+
+/* 로딩 화면 */
+.loading-overlay {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 18px;
+  background-color: #fff9f0;
+}
+.loading-spinner {
+  width: 56px;
+  height: 56px;
+  border: 6px solid #ffecd2;
+  border-top-color: #ff758c;
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.loading-text {
+  font-size: 22px;
+  color: #ff9a9e;
+}
+.loading-detail {
+  font-size: 15px;
+  color: #888;
+}
+
+/* API 키 경고 배너 */
+.api-warning {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: #fff3cd;
+  color: #856404;
+  font-size: 12px;
+  padding: 6px 10px;
+  text-align: center;
+  z-index: 10;
+}
+.api-warning code {
+  background: rgba(0, 0, 0, 0.06);
+  padding: 0 4px;
+  border-radius: 4px;
+}
