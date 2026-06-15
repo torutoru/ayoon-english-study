@@ -16,9 +16,14 @@ export function Bubble({
     return <div className={`bubble ${kind}`}>{message.msg}</div>;
   }
 
+  const hasTip = Boolean(message.translation);
+
   return (
     <div className="bubble-row">
-      <div className={`bubble ${kind}`}>{message.msg}</div>
+      <div className={`bubble ${kind} ${hasTip ? 'has-tip' : ''}`}>
+        {message.msg}
+        {hasTip && <span className="bubble-tip">{message.translation}</span>}
+      </div>
       {onReplay && (
         <button
           className="replay-btn"

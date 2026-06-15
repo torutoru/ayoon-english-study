@@ -2,8 +2,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   DIFFICULTY_RATE,
-  KOREAN_LANG,
-  KOREAN_RATE,
   SPEECH_LANG,
   TOPIC_EXPAND_EVERY,
   todayKey,
@@ -40,15 +38,18 @@ export function useConversation(active: boolean, difficulty: Difficulty) {
     messages: [],
     error: null,
   });
+  // 콜백에서 항상 최신 상태를 안전하게 읽기 위한 미러 ref
+  // (setState 업데이터는 즉시 실행이 보장되지 않아 그 안에서 값을 빼오면 stale 위험)
+  const stateRef = useRef(state);
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
   const startedRef = useRef(false);
   // 콜백에서 최신 난이도를 참조하기 위한 ref (세션 중 변하지 않지만 안전하게)
   const difficultyRef = useRef(difficulty);
   useEffect(() => {
     difficultyRef.current = difficulty;
   }, [difficulty]);
-  // 화면이 살아있는 동안만 음성을 재생/이어가기 위한 플래그.
-  // 언마운트(페이지 이탈) 후 진행 중이던 비동기 재생 체인을 끊는다.
-  const aliveRef = useRef(true);
 
   // 질문 생성에 쓰는 "진행 중 주제" — 일정 턴마다 확장된다.
   // IndexedDB 에 저장되는 state.topic(그날의 원래 주제)과 분리해서 메모리에서만 굴린다.
@@ -71,17 +72,12 @@ export function useConversation(active: boolean, difficulty: Difficulty) {
   );
 
   /**
-   * 난이도 규칙대로 한 메시지를 음성 재생: 영어 원문 → (쉬움/중간이면) 한국어 번역.
-   * - 어려움 난이도는 한국어를 절대 읽지 않는다 (이중 방어: translation 유무와 무관하게 차단).
-   * - 화면을 떠나면(aliveRef=false) 영어 다음 한국어로 넘어가지 않고 즉시 멈춘다.
+   * 한 메시지를 음성 재생한다. 영어 원문만 읽는다.
+   * (한국어 번역은 음성으로 읽지 않고, 화면에서 티쳐 말풍선에 hover 하면 툴팁으로 보여준다.)
    */
   const speakMessage = useCallback(async (m: Message) => {
     const rate = DIFFICULTY_RATE[difficultyRef.current];
     await speak(m.msg, { lang: SPEECH_LANG, rate });
-    if (!aliveRef.current) return;
-    if (m.translation && difficultyRef.current !== 'hard') {
-      await speak(m.translation, { lang: KOREAN_LANG, rate: KOREAN_RATE });
-    }
   }, []);
 
   /** 말풍선 "다시 듣기" — 상태 머신을 건드리지 않고 해당 메시지만 다시 재생 */
@@ -157,17 +153,16 @@ export function useConversation(active: boolean, difficulty: Difficulty) {
         return;
       }
 
-      // 현재 상태를 안전하게 읽기 위해 setState 콜백 활용
-      let topic = '';
-      let lastQuestion = '';
-      let withStudent: Message[] = [];
-      setState((s) => {
-        topic = s.topic;
-        const teacherMsgs = s.messages.filter((m) => m.sender === '티쳐');
-        lastQuestion = teacherMsgs[teacherMsgs.length - 1]?.msg ?? '';
-        withStudent = [...s.messages, { sender: '학생', msg: transcript }];
-        return { ...s, messages: withStudent, phase: 'evaluating' };
-      });
+      // 현재 상태를 ref 로 안전하게 읽는다 (stale 방지)
+      const cur = stateRef.current;
+      const topic = cur.topic;
+      const teacherMsgs = cur.messages.filter((m) => m.sender === '티쳐');
+      const lastQuestion = teacherMsgs[teacherMsgs.length - 1]?.msg ?? '';
+      const withStudent: Message[] = [
+        ...cur.messages,
+        { sender: '학생', msg: transcript },
+      ];
+      patch({ messages: withStudent, phase: 'evaluating' });
 
       await persist(topic, withStudent);
 
@@ -205,11 +200,9 @@ export function useConversation(active: boolean, difficulty: Difficulty) {
     if (!active) stopSpeaking();
   }, [active]);
 
-  // 언마운트(페이지 이탈) 시 재생 중인 음성을 끊고, 진행 중인 재생 체인도 중단
+  // 언마운트(페이지 이탈) 시 재생 중인 음성을 끊는다
   useEffect(() => {
-    aliveRef.current = true;
     return () => {
-      aliveRef.current = false;
       stopSpeaking();
     };
   }, []);

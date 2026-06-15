@@ -186,6 +186,44 @@ h1 {
   border-top-right-radius: 0;
 }
 
+/* 티쳐 말풍선에 hover 하면 한국어 번역을 말풍선 위에 툴팁으로 보여준다 */
+.bubble.has-tip {
+  position: relative;
+  cursor: help;
+}
+.bubble-tip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  width: max-content;
+  max-width: 240px;
+  background: rgba(60, 60, 80, 0.95);
+  color: #fff;
+  font-size: 14px;
+  line-height: 1.4;
+  padding: 8px 12px;
+  border-radius: 12px;
+  white-space: normal;
+  text-align: left;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(4px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  pointer-events: none;
+  z-index: 40;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+.bubble.has-tip:hover .bubble-tip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+/* 첫 줄 말풍선은 위쪽이 잘리므로 툴팁을 말풍선 아래로 뒤집어 표시 */
+.chat-box > .bubble-row:first-child .bubble-tip {
+  bottom: auto;
+  top: calc(100% + 8px);
+}
+
 .walkie-talkie-container {
   display: flex;
   justify-content: center;

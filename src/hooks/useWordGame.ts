@@ -47,15 +47,64 @@ function normalize(s: string): string {
     .trim();
 }
 
-/** transcript 안에 정답 단어가 들어있으면 정답으로 인정 */
+/** 단수/복수 등 흔한 어미를 떼어 비교용 어간으로 (apples→apple, foxes→fox) */
+function stem(w: string): string {
+  return w.replace(/(ies|es|s)$/i, '');
+}
+
+/** 두 단어의 편집 거리(레벤슈타인) — STT 오인식을 허용하기 위한 유사도 */
+function editDistance(a: string, b: string): number {
+  const m = a.length;
+  const n = b.length;
+  if (!m) return n;
+  if (!n) return m;
+  const dp = Array.from({ length: m + 1 }, (_, i) => i);
+  for (let j = 1; j <= n; j++) {
+    let prev = dp[0];
+    dp[0] = j;
+    for (let i = 1; i <= m; i++) {
+      const tmp = dp[i];
+      dp[i] = Math.min(
+        dp[i] + 1, // 삭제
+        dp[i - 1] + 1, // 삽입
+        prev + (a[i - 1] === b[j - 1] ? 0 : 1), // 치환
+      );
+      prev = tmp;
+    }
+  }
+  return dp[m];
+}
+
+/** 단어 길이에 따른 허용 오차 (짧을수록 엄격) */
+function tolerance(word: string): number {
+  return word.length <= 4 ? 1 : 2;
+}
+
+/**
+ * transcript 가 정답에 충분히 가까우면 정답으로 인정한다.
+ * 6살 아이 + 브라우저 STT 의 오인식을 고려해 너그럽게 판정:
+ *  - 정확 일치 / 단수·복수 / 발음 유사(편집 거리) 모두 정답 처리.
+ */
 function matches(transcript: string, answer: string): boolean {
   const t = normalize(transcript);
   const a = normalize(answer);
   if (!t || !a) return false;
   if (t === a) return true;
-  if (t.split(' ').includes(a)) return true;
-  // 여러 단어 정답("ice cream" 등) 대응
-  return a.includes(' ') && t.includes(a);
+
+  // 여러 단어 정답("ice cream" 등): 포함되거나 전체가 충분히 비슷하면 정답
+  if (a.includes(' ')) {
+    return t.includes(a) || editDistance(t, a) <= tolerance(a);
+  }
+
+  // 한 단어 정답: 각 토큰을 정확/어간/발음유사 로 비교
+  const tol = tolerance(a);
+  const aStem = stem(a);
+  for (const tok of t.split(' ')) {
+    if (tok === a) return true;
+    if (stem(tok) === aStem) return true; // 단수/복수
+    if (editDistance(tok, a) <= tol) return true; // 발음 유사(오인식 허용)
+  }
+  return false;
 }
 
 /** 목록에서 무작위로 n장 (중복 없이) 뽑는다 */
@@ -76,6 +125,12 @@ export function useWordGame(active: boolean, difficulty: Difficulty) {
     lastHeard: null,
     error: null,
   });
+  // 콜백에서 항상 최신 상태를 안전하게 읽기 위한 미러 ref
+  // (setState 업데이터는 즉시 실행이 보장되지 않아 그 안에서 값을 빼오면 stale 위험)
+  const stateRef = useRef(state);
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
   const startedRef = useRef(false);
   const difficultyRef = useRef(difficulty);
   useEffect(() => {
@@ -151,14 +206,9 @@ export function useWordGame(active: boolean, difficulty: Difficulty) {
         return;
       }
 
-      // 현재 라운드/카드를 안전하게 읽기 위해 setState 콜백 활용 (대화하기와 동일 패턴)
-      let cards: WordCard[] = [];
-      let round = 0;
-      setState((s) => {
-        cards = s.cards;
-        round = s.round;
-        return { ...s, phase: 'checking', lastHeard: transcript };
-      });
+      // 현재 라운드/카드를 ref 로 안전하게 읽는다 (stale 방지)
+      const { cards, round } = stateRef.current;
+      patch({ phase: 'checking', lastHeard: transcript });
 
       const card = cards[round];
       const correct = card ? matches(transcript, card.answer) : false;
