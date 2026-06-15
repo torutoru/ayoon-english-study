@@ -5,6 +5,7 @@ import { ChatScreen } from './screens/ChatScreen';
 import { GameScreen } from './screens/GameScreen';
 import { HistoryScreen } from './screens/HistoryScreen';
 import { MainScreen } from './screens/MainScreen';
+import { TestScreen } from './screens/TestScreen';
 import type { Difficulty, Screen } from './types';
 
 // 컨테이너 기준 크기 (index.css 의 #app 과 일치)
@@ -52,6 +53,7 @@ export default function App() {
         <GameScreen key={`game-${difficulty}`} onNav={setScreen} difficulty={difficulty} />
       )}
       {screen === 'history' && <HistoryScreen key="history" onNav={setScreen} />}
+      {screen === 'test' && <TestScreen key="test" onNav={setScreen} />}
     </div>
   );
 }

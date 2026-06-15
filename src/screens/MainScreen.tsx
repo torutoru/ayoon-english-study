@@ -44,6 +44,9 @@ export function MainScreen({
           <button className="main-btn history" onClick={() => onNav('history')}>
             📖 지난 이야기
           </button>
+          <button className="main-btn test" onClick={() => onNav('test')}>
+            🔬 테스트
+          </button>
         </div>
       ) : (
         <div className="main-buttons">

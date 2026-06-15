@@ -51,7 +51,7 @@ export interface EvalResult extends TeacherLine {
    */
 }
 
-export type Screen = 'main' | 'chat' | 'history' | 'game';
+export type Screen = 'main' | 'chat' | 'history' | 'game' | 'test';
 
 /** 단어 맞추기 게임의 카드 한 장 (사용자가 미리 정의) */
 export interface WordCard {

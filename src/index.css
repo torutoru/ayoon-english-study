@@ -40,8 +40,9 @@ body {
 h1 {
   color: #ff9a9e;
   text-align: center;
-  margin-top: 40px;
-  font-size: 32px;
+  margin-top: 24px;
+  margin-bottom: 8px;
+  font-size: 30px;
 }
 
 .subtitle {
@@ -86,10 +87,10 @@ h1 {
   border: none;
   border-radius: 25px;
   color: white;
-  font-size: 28px;
+  font-size: 26px;
   font-family: inherit;
-  padding: 30px 20px;
-  margin: 15px 0;
+  padding: 22px 20px;
+  margin: 10px 0;
   cursor: pointer;
   box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s;
@@ -99,6 +100,9 @@ h1 {
 }
 .main-btn.game {
   background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+}
+.main-btn.test {
+  background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);
 }
 .main-btn:active {
   transform: scale(0.95);
@@ -515,4 +519,73 @@ tr:last-child td {
   background: rgba(0, 0, 0, 0.06);
   padding: 0 4px;
   border-radius: 4px;
+}
+
+/* 음성 테스트 화면 스타일 */
+.test-result {
+  align-items: stretch;
+  justify-content: center;
+}
+.test-transcript {
+  background-color: #e2f0cb;
+  border-radius: 20px;
+  padding: 18px 20px;
+  font-size: 22px;
+  line-height: 1.5;
+  color: #4a4a4a;
+  word-break: break-word;
+  align-self: center;
+  max-width: 90%;
+}
+.walkie-talkie-btn.recording {
+  background-color: #ff4766;
+  animation: rec-pulse 1s infinite;
+}
+@keyframes rec-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 71, 102, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 18px rgba(255, 71, 102, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 71, 102, 0);
+  }
+}
+
+/* 모델 다운로드 토스트 (상단 떠있는 작은 알림) */
+.dl-toast {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(60, 60, 80, 0.92);
+  color: #fff;
+  font-size: 13px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  white-space: nowrap;
+  max-width: 92%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  z-index: 30;
+  animation: dl-toast-in 0.25s ease;
+}
+.dl-toast.ready {
+  background: rgba(46, 160, 110, 0.95);
+}
+.dl-toast.error {
+  background: rgba(200, 60, 60, 0.95);
+  white-space: normal;
+}
+@keyframes dl-toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -8px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
 }
