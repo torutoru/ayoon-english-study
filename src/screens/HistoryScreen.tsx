@@ -4,17 +4,25 @@ import { Loading } from '../components/Loading';
 import { HISTORY_PAGE_SIZE } from '../config';
 import { getAllRecords } from '../services/db';
 import { backfillSummaries } from '../services/summary';
-import type { DailyRecord, Screen } from '../types';
+import type { DailyRecord, Difficulty, Screen } from '../types';
 
 interface Row {
   date: string;
+  difficulty: Difficulty;
   record: DailyRecord;
 }
+
+const DIFF_TABS: Array<{ value: Difficulty; icon: string; label: string }> = [
+  { value: 'easy', icon: '🐢', label: '쉬움' },
+  { value: 'medium', icon: '🐰', label: '중간' },
+  { value: 'hard', icon: '🦅', label: '어려움' },
+];
 
 export function HistoryScreen({ onNav }: { onNav: (s: Screen) => void }) {
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [rows, setRows] = useState<Row[]>([]);
+  const [tab, setTab] = useState<Difficulty>('easy');
   const [selected, setSelected] = useState<string | null>(null);
   const [page, setPage] = useState(0);
 
@@ -40,12 +48,21 @@ export function HistoryScreen({ onNav }: { onNav: (s: Screen) => void }) {
     };
   }, []);
 
-  const pageCount = Math.max(1, Math.ceil(rows.length / HISTORY_PAGE_SIZE));
+  // 선택된 난이도 탭의 기록만 추린다 (난이도별 대화 분리)
+  const filtered = useMemo(() => rows.filter((r) => r.difficulty === tab), [rows, tab]);
+  const pageCount = Math.max(1, Math.ceil(filtered.length / HISTORY_PAGE_SIZE));
   const pageRows = useMemo(
-    () => rows.slice(page * HISTORY_PAGE_SIZE, (page + 1) * HISTORY_PAGE_SIZE),
-    [rows, page],
+    () => filtered.slice(page * HISTORY_PAGE_SIZE, (page + 1) * HISTORY_PAGE_SIZE),
+    [filtered, page],
   );
-  const selectedRow = rows.find((r) => r.date === selected);
+  const selectedRow = filtered.find((r) => r.date === selected);
+
+  // 탭을 바꾸면 페이지·선택 초기화
+  const changeTab = (next: Difficulty) => {
+    setTab(next);
+    setPage(0);
+    setSelected(null);
+  };
 
   if (loading) {
     const detail =
@@ -61,6 +78,18 @@ export function HistoryScreen({ onNav }: { onNav: (s: Screen) => void }) {
         <button className="back-btn" onClick={() => onNav('main')}>
           🔙 홈으로
         </button>
+      </div>
+
+      <div className="history-tabs">
+        {DIFF_TABS.map((t) => (
+          <button
+            key={t.value}
+            className={`history-tab ${t.value} ${tab === t.value ? 'active' : ''}`}
+            onClick={() => changeTab(t.value)}
+          >
+            {t.icon} {t.label}
+          </button>
+        ))}
       </div>
 
       <div className="history-table-container">

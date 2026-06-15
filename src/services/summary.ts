@@ -21,9 +21,9 @@ export async function backfillSummaries(
   if (total === 0) return 0;
 
   let done = 0;
-  for (const { date, record } of pending) {
+  for (const { date, difficulty, record } of pending) {
     const summary = await summarize(record.messages);
-    await putRecord(date, { ...record, summary });
+    await putRecord(date, difficulty, { ...record, summary });
     done += 1;
     onProgress?.(done, total);
   }

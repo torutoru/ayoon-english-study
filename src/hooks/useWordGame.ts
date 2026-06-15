@@ -81,6 +81,8 @@ export function useWordGame(active: boolean, difficulty: Difficulty) {
   useEffect(() => {
     difficultyRef.current = difficulty;
   }, [difficulty]);
+  // 언마운트(페이지 이탈) 후 진행 중이던 재생/라운드 체인을 끊기 위한 플래그
+  const aliveRef = useRef(true);
 
   const patch = useCallback((p: Partial<GameState>) => {
     setState((s) => ({ ...s, ...p }));
@@ -89,6 +91,7 @@ export function useWordGame(active: boolean, difficulty: Difficulty) {
   /** 라운드 시작: "What is this?" 를 들려주고 입력 대기로 전환 */
   const startRound = useCallback(
     async (cards: WordCard[], round: number) => {
+      if (!aliveRef.current) return; // 화면 이탈 후엔 다음 라운드 음성을 시작하지 않음
       if (round >= cards.length) {
         patch({ phase: 'done' });
         return;
@@ -98,6 +101,7 @@ export function useWordGame(active: boolean, difficulty: Difficulty) {
         lang: SPEECH_LANG,
         rate: DIFFICULTY_RATE[difficultyRef.current],
       });
+      if (!aliveRef.current) return;
       patch({ phase: 'idle' });
     },
     [patch],
@@ -192,10 +196,19 @@ export function useWordGame(active: boolean, difficulty: Difficulty) {
     void startRound(cards, 0);
   }, [startRound]);
 
-  // 화면 떠날 때 재생 중단
+  // 비활성화될 때 재생 중단
   useEffect(() => {
     if (!active) stopSpeaking();
   }, [active]);
+
+  // 언마운트(페이지 이탈) 시 재생 중인 음성을 끊고, 진행 중인 라운드 체인도 중단
+  useEffect(() => {
+    aliveRef.current = true;
+    return () => {
+      aliveRef.current = false;
+      stopSpeaking();
+    };
+  }, []);
 
   return { ...state, handleMicPress, replayPrompt, restart, total: TOTAL_ROUNDS };
 }

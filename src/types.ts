@@ -17,10 +17,15 @@ export interface Message {
   translation?: string | null;
 }
 
-/** IndexedDB value. key는 날짜 문자열 'yyyy-mm-dd'. */
+/**
+ * IndexedDB value. key는 'yyyy-mm-dd__difficulty' 복합 문자열.
+ * 같은 날짜라도 난이도별로 별도 기록을 갖는다 (난이도별 대화 관리).
+ */
 export interface DailyRecord {
   /** 1단계에서 생성한 그날의 주제 */
   topic: string;
+  /** 이 기록이 속한 난이도 */
+  difficulty: Difficulty;
   /** 대화 메시지 목록 (시간순) */
   messages: Message[];
   /** messages 요약(100자 이내). 대화 당일엔 null, 이후 날짜 접속 시 lazy 생성 */

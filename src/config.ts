@@ -29,8 +29,8 @@ export const KOREAN_LANG = 'ko-KR';
 
 /** 난이도별 영어 TTS 재생 속도 (SpeechSynthesisUtterance.rate) */
 export const DIFFICULTY_RATE: Record<import('./types').Difficulty, number> = {
-  easy: 0.4,
-  medium: 0.6,
+  easy: 0.5,
+  medium: 0.8,
   hard: 1.0,
 };
 

@@ -46,6 +46,9 @@ export function useConversation(active: boolean, difficulty: Difficulty) {
   useEffect(() => {
     difficultyRef.current = difficulty;
   }, [difficulty]);
+  // 화면이 살아있는 동안만 음성을 재생/이어가기 위한 플래그.
+  // 언마운트(페이지 이탈) 후 진행 중이던 비동기 재생 체인을 끊는다.
+  const aliveRef = useRef(true);
 
   // 질문 생성에 쓰는 "진행 중 주제" — 일정 턴마다 확장된다.
   // IndexedDB 에 저장되는 state.topic(그날의 원래 주제)과 분리해서 메모리에서만 굴린다.
@@ -60,17 +63,23 @@ export function useConversation(active: boolean, difficulty: Difficulty) {
   /** 메시지 추가 + 즉시 영속화 (summary는 항상 null 유지) */
   const persist = useCallback(
     async (topic: string, messages: Message[]) => {
-      const record: DailyRecord = { topic, messages, summary: null };
-      await putRecord(todayKey(), record);
+      const difficulty = difficultyRef.current;
+      const record: DailyRecord = { topic, difficulty, messages, summary: null };
+      await putRecord(todayKey(), difficulty, record);
     },
     [],
   );
 
-  /** 난이도 규칙대로 한 메시지를 음성 재생: 영어 원문 → (쉬움/중간이면) 한국어 번역 */
+  /**
+   * 난이도 규칙대로 한 메시지를 음성 재생: 영어 원문 → (쉬움/중간이면) 한국어 번역.
+   * - 어려움 난이도는 한국어를 절대 읽지 않는다 (이중 방어: translation 유무와 무관하게 차단).
+   * - 화면을 떠나면(aliveRef=false) 영어 다음 한국어로 넘어가지 않고 즉시 멈춘다.
+   */
   const speakMessage = useCallback(async (m: Message) => {
     const rate = DIFFICULTY_RATE[difficultyRef.current];
     await speak(m.msg, { lang: SPEECH_LANG, rate });
-    if (m.translation) {
+    if (!aliveRef.current) return;
+    if (m.translation && difficultyRef.current !== 'hard') {
       await speak(m.translation, { lang: KOREAN_LANG, rate: KOREAN_RATE });
     }
   }, []);
@@ -106,7 +115,8 @@ export function useConversation(active: boolean, difficulty: Difficulty) {
 
     (async () => {
       try {
-        const existing = await getRecord(todayKey());
+        // 같은 날짜라도 현재 난이도의 기록만 이어간다 (난이도별 대화 분리)
+        const existing = await getRecord(todayKey(), difficultyRef.current);
         if (existing && existing.messages.length > 0) {
           topicRef.current = existing.topic;
           // 이미 주고받은 학생 답변 수만큼 턴 카운트를 이어받아 확장 주기를 유지
@@ -114,11 +124,11 @@ export function useConversation(active: boolean, difficulty: Difficulty) {
           patch({ topic: existing.topic, messages: existing.messages, phase: 'idle' });
           return;
         }
-        const topic = existing?.topic || (await generateTopic());
+        const topic = existing?.topic || (await generateTopic(difficultyRef.current));
         topicRef.current = topic;
         turnRef.current = 0;
         patch({ topic });
-        const first = await generateQuestion(topic, []);
+        const first = await generateQuestion(topic, [], difficultyRef.current);
         await addTeacher(topic, [], first.en, first.ko);
       } catch (e) {
         patch({ phase: 'idle', error: errMsg(e) });
@@ -165,7 +175,11 @@ export function useConversation(active: boolean, difficulty: Difficulty) {
       turnRef.current += 1;
       if (turnRef.current % TOPIC_EXPAND_EVERY === 0) {
         try {
-          topicRef.current = await expandTopic(topicRef.current, withStudent);
+          topicRef.current = await expandTopic(
+            topicRef.current,
+            withStudent,
+            difficultyRef.current,
+          );
         } catch {
           // 확장 실패해도 기존 주제로 대화를 계속한다
         }
@@ -177,6 +191,7 @@ export function useConversation(active: boolean, difficulty: Difficulty) {
         withStudent,
         lastQuestion,
         transcript,
+        difficultyRef.current,
       );
       // 정답/오답 모두 en(영어)을 표시·재생, ko(번역)는 쉬움/중간에서만 스피커로
       await addTeacher(topic, withStudent, result.en, result.ko);
@@ -185,10 +200,19 @@ export function useConversation(active: boolean, difficulty: Difficulty) {
     }
   }, [addTeacher, patch, persist]);
 
-  // 화면 떠날 때 재생 중단
+  // 비활성화될 때 재생 중단
   useEffect(() => {
     if (!active) stopSpeaking();
   }, [active]);
+
+  // 언마운트(페이지 이탈) 시 재생 중인 음성을 끊고, 진행 중인 재생 체인도 중단
+  useEffect(() => {
+    aliveRef.current = true;
+    return () => {
+      aliveRef.current = false;
+      stopSpeaking();
+    };
+  }, []);
 
   return { ...state, handleMicPress, replay };
 }
